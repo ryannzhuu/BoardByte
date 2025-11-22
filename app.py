@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 from openai import OpenAI
 import base64
 import os
@@ -7,6 +7,7 @@ client = OpenAI()
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'
 
 def wrap_text(text, width=230):
     wrapped_lines = []
@@ -22,19 +23,20 @@ def wrap_text(text, width=230):
     return "\n".join(wrapped_lines)
 
 def build_prompt(mode):
+    baserule = ("Rules: Do NOT make up content. Do NOT add introductions or formalities, ONLY provide the notes in the specified format. Nothing else \n\n")
     if mode == "bullet":
-        return "Convert the board content into clean, organized BULLET POINT notes."
+        return baserule + "Convert the board content into clean, organized BULLET POINT notes."
     elif mode == "cornell":
-        return ("Convert the board content into CORNELL NOTES format with:\n"
+        return baserule + ("Convert the board content into CORNELL NOTES format with:\n"
                 "- Main Notes\n- Cues/Keywords\n- Summary")
     elif mode == "summary":
-        return "Create a short EXAM REVIEW SUMMARY highlighting only the most testable information."
+        return baserule + "Create a short EXAM REVIEW SUMMARY highlighting only the most testable information."
     elif mode == "definitions":
-        return "Extract ONLY the KEY TERMS and DEFINITIONS from this board. Ignore everything else."
+        return baserule + "Extract ONLY the KEY TERMS and DEFINITIONS from this board. Ignore everything else."
     elif mode == "steps":
-        return "Turn the board into a clear STEP-BY-STEP EXPLANATION of the process."
+        return baserule + "Turn the board into a clear STEP-BY-STEP EXPLANATION of the process."
     else:
-        return "Convert this board into clean, structured class notes."
+        return baserule + "Convert this board into clean, structured class notes."
 
 
 @app.route('/')
@@ -44,8 +46,9 @@ def index():
 @app.route('/results', methods=['POST'])
 def results():
     image = request.files['image']
-    image_path = "uploads/uploaded.png"
-    image.save(image_path)
+    filename = "uploaded.png"
+    image_path = f"uploads/{filename}"
+    image.save(os.path.join(UPLOAD_FOLDER, filename))
     mode = request.form.get("mode", "bullet")
 
     prompt = build_prompt(mode)
@@ -60,12 +63,15 @@ def results():
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": prompt},
                     {
                         "type": "image_url",
                         "image_url": {
                             "url": f"data:image/png;base64,{img_base64}"
                         }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
                     }
                 ]
             }
@@ -74,7 +80,11 @@ def results():
 
     notes = response.choices[0].message.content
     notes = wrap_text(notes)
-    return render_template("results.html", notes=notes)
+    return render_template("results.html", notes=notes, image_path=image_path)
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

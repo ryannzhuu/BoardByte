@@ -1,11 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>BoardByte Notes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .image-box, .notes-box {
+            width: 50%;
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+            background: #fafafa;
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        img {
+            width: 100%;
+            border-radius: 10px;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 16px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Your Notes</h1>
-    <pre>{{ notes }}</pre>
-    <a href="/">Go Back</a>
+
+<h1>BoardByte Results</h1>
+
+<div class="container">
+    <div class="image-box">
+        <h3>Uploaded Board Image</h3>
+        <img src="{{ image_path }}" alt="Uploaded Image">
+    </div>
+
+    <div class="notes-box">
+        <h3>Generated Notes</h3>
+        <pre>{{ notes }}</pre>
+    </div>
+</div>
+
 </body>
 </html>
