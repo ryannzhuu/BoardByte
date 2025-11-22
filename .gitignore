@@ -1,8 +1,5 @@
 venv/
 .venv/
 uploads/
-*.png
-*.jpg
-*.jpeg
 __pycache__/
 *.pyc
