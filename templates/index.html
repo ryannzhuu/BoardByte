@@ -5,9 +5,18 @@
 </head>
 <body>
     <h1>Upload a board photo</h1>
-    <form action="/results" method="POST" enctype="multipart/form-data">
-        <input type="file" name="image" required>
-        <button type="submit">Submit</button>
+    <form action="/results" method="POST" enctype="multipart/form-data" onsubmit="showLoader()">
+
+    <h3>Select Note Style:</h3>
+
+    <label><input type="radio" name="mode" value="bullet" checked> Bullet Notes</label><br>
+    <label><input type="radio" name="mode" value="cornell"> Cornell Notes</label><br>
+    <label><input type="radio" name="mode" value="summary"> Exam Review Summary</label><br>
+    <label><input type="radio" name="mode" value="definitions"> Definitions Only</label><br>
+    <label><input type="radio" name="mode" value="steps"> Step-by-Step Breakdown</label><br><br>
+
+    <input type="file" name="image" required>
+    <button type="submit">Generate Notes</button>
     </form>
 </body>
 </html>
