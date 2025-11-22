@@ -6,38 +6,25 @@ import os
 client = OpenAI()
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
 
-def wrap_text(text, width=230):
-    wrapped_lines = []
-    for paragraph in text.split("\n"):
-        line = ""
-        for word in paragraph.split(" "):
-            if len(line) + len(word) + 1 > width:
-                wrapped_lines.append(line.rstrip())
-                line = word + " "
-            else:
-                line += word + " "
-        wrapped_lines.append(line.rstrip())
-    return "\n".join(wrapped_lines)
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def build_prompt(mode):
-    baserule = ("Rules: Do NOT make up content. Do NOT add introductions or formalities, ONLY provide the notes in the specified format. Nothing else \n\n")
-    if mode == "bullet":
-        return baserule + "Convert the board content into clean, organized BULLET POINT notes."
-    elif mode == "cornell":
-        return baserule + ("Convert the board content into CORNELL NOTES format with:\n"
-                "- Main Notes\n- Cues/Keywords\n- Summary")
-    elif mode == "summary":
-        return baserule + "Create a short EXAM REVIEW SUMMARY highlighting only the most testable information."
-    elif mode == "definitions":
-        return baserule + "Extract ONLY the KEY TERMS and DEFINITIONS from this board. Ignore everything else."
-    elif mode == "steps":
-        return baserule + "Turn the board into a clear STEP-BY-STEP EXPLANATION of the process."
-    else:
-        return baserule + "Convert this board into clean, structured class notes."
+    base = "Rules: Do NOT make up content. Do NOT add introductions. ONLY provide the notes in the requested format.\n\n"
 
+    if mode == "bullet":
+        return base + "Convert all board content into clean BULLET POINT notes."
+    elif mode == "cornell":
+        return base + "Convert all board content into CORNELL NOTES format with: Main Notes, Cues, and Summary."
+    elif mode == "summary":
+        return base + "Create a short EXAM REVIEW SUMMARY of the most important testable information."
+    elif mode == "definitions":
+        return base + "Extract ONLY KEY TERMS and DEFINITIONS. One per line."
+    elif mode == "steps":
+        return base + "Convert the board into a clear STEP-BY-STEP explanation."
+    else:
+        return base + "Convert the board content into clean, structured notes."
 
 @app.route('/')
 def index():
@@ -45,42 +32,49 @@ def index():
 
 @app.route('/results', methods=['POST'])
 def results():
-    image = request.files['image']
-    filename = "uploaded.png"
-    image_path = f"uploads/{filename}"
-    image.save(os.path.join(UPLOAD_FOLDER, filename))
     mode = request.form.get("mode", "bullet")
+    images = request.files.getlist("images")
+    images = [i for i in images if i.filename]
+
+    if not images:
+        return "No images uploaded."
+
+    image_paths = []
+    encoded_images = []
+
+    for idx, img in enumerate(images):
+        name, ext = os.path.splitext(img.filename)
+        if not ext:
+            ext = ".png"
+        filename = f"img_{idx}{ext}"
+        path = os.path.join(UPLOAD_FOLDER, filename)
+        img.save(path)
+        image_paths.append(f"{UPLOAD_FOLDER}/{filename}")
+
+        with open(path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("utf-8")
+            encoded_images.append(encoded)
 
     prompt = build_prompt(mode)
 
-    with open(image_path, "rb") as img_file:
-        img_bytes = img_file.read()
-        img_base64 = base64.b64encode(img_bytes).decode('utf-8')
+    content = []
+    for b64 in encoded_images:
+        content.append({
+            "type": "image_url",
+            "image_url": {"url": f"data:image/png;base64,{b64}"}
+        })
+    content.append({"type": "text", "text": prompt})
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{img_base64}"
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
+        messages=[{"role": "user", "content": content}]
     )
 
-    notes = response.choices[0].message.content
-    notes = wrap_text(notes)
-    return render_template("results.html", notes=notes, image_path=image_path)
+    return render_template(
+        "results.html",
+        notes=response.choices[0].message.content,
+        image_paths=image_paths
+    )
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):

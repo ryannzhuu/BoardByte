@@ -1,23 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ClearBoard AI</title>
+    <title>BoardByte</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 30px;
+            margin: 0;
+            background: #111;
+            color: white;
+        }
+        body.light {
+            background: white;
+            color: black;
+        }
+        label {
+            display: block;
+            margin: 6px 0;
+        }
+        input, button {
+            font-size: 16px;
+        }
+        .toggle-dark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        body.light .toggle-dark {
+            background: #ddd;
+            color: black;
+            border-color: #aaa;
+        }
+    </style>
 </head>
 <body>
-    <h1>BoardByte</h1>
-    <h2>Upload your work and generate notes!</h2>
-    <form action="/results" method="POST" enctype="multipart/form-data" onsubmit="showLoader()">
 
+<h1>BoardByte</h1>
+<h2>Upload your work and generate notes!</h2>
+
+<form action="/results" method="POST" enctype="multipart/form-data">
     <h3>Select Note Style:</h3>
 
-    <label><input type="radio" name="mode" value="bullet" checked> Bullet Notes</label><br>
-    <label><input type="radio" name="mode" value="cornell"> Cornell Notes</label><br>
-    <label><input type="radio" name="mode" value="summary"> Exam Review Summary</label><br>
-    <label><input type="radio" name="mode" value="definitions"> Definitions Only</label><br>
-    <label><input type="radio" name="mode" value="steps"> Step-by-Step Breakdown</label><br><br>
+    <label><input type="radio" name="mode" value="bullet" checked> Bullet Notes</label>
+    <label><input type="radio" name="mode" value="cornell"> Cornell Notes</label>
+    <label><input type="radio" name="mode" value="summary"> Exam Review Summary</label>
+    <label><input type="radio" name="mode" value="definitions"> Definitions Only</label>
+    <label><input type="radio" name="mode" value="steps"> Step-by-Step Breakdown</label>
 
-    <input type="file" name="image" required>
+    <br><br>
+    <h3>Upload Images (you may select multiple)</h3>
+    <input type="file" name="images" multiple required><br><br>
+
     <button type="submit">Generate Notes</button>
-    </form>
+</form>
+
+<button class="toggle-dark" id="dark-toggle">Light Mode</button>
+
+<script>
+    const toggle = document.getElementById("dark-toggle");
+
+    if (!localStorage.getItem("darkMode")) {
+        localStorage.setItem("darkMode", "true");
+    }
+    if (localStorage.getItem("darkMode") === "false") {
+        document.body.classList.add("light");
+        toggle.textContent = "Dark Mode";
+    }
+
+    toggle.addEventListener("click", () => {
+        const isLight = document.body.classList.contains("light");
+        if (isLight) {
+            document.body.classList.remove("light");
+            localStorage.setItem("darkMode", "true");
+            toggle.textContent = "Light Mode";
+        } else {
+            document.body.classList.add("light");
+            localStorage.setItem("darkMode", "false");
+            toggle.textContent = "Dark Mode";
+        }
+    });
+</script>
+
 </body>
 </html>

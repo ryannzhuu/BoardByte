@@ -7,39 +7,128 @@
         body {
             font-family: Arial, sans-serif;
             margin: 30px;
+            background: #111;
+            color: white;
         }
+        body.light {
+            background: white;
+            color: black;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header button {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .header button.active {
+            background: #2563eb;
+        }
+        body.light .header button {
+            background: #ddd;
+            color: black;
+            border-color: #aaa;
+        }
+
         .container {
             display: flex;
             gap: 20px;
+            width: 100%;
         }
+
         .image-box, .notes-box {
             width: 50%;
-            border: 1px solid #ccc;
+            border: 1px solid #444;
             padding: 15px;
             border-radius: 10px;
-            background: #fafafa;
+            background: #1a1a1a;
             overflow-y: auto;
             max-height: 80vh;
+            box-sizing: border-box;
         }
+        body.light .image-box,
+        body.light .notes-box {
+            background: #fafafa;
+            border-color: #ccc;
+        }
+
+        .notes-only {
+            flex-direction: column;
+            align-items: center;
+        }
+        .notes-only .image-box {
+            display: none;
+        }
+        .notes-only .notes-box {
+            width: 1000px;
+            max-width: 100%;
+            max-height: none;
+            margin: 0;
+        }
+
         img {
             width: 100%;
             border-radius: 10px;
+            margin-bottom: 20px;
         }
         pre {
             white-space: pre-wrap;
             word-wrap: break-word;
             font-size: 16px;
         }
+
+        .toggle-dark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        body.light .toggle-dark {
+            background: #ddd;
+            color: black;
+            border-color: #aaa;
+        }
     </style>
 </head>
 <body>
 
-<h1>BoardByte Results</h1>
+<div class="header">
+    <div class="header-left">
+        <h1 style="margin: 0;">BoardByte Notes</h1>
+        <button onclick="window.location.href='/'">Back</button>
+    </div>
 
-<div class="container">
+    <button id="toggle-view-btn" class="active">
+        Show Uploads: ON
+    </button>
+</div>
+
+<div class="container" id="view-container">
     <div class="image-box">
-        <h3>Uploaded Board Image</h3>
-        <img src="{{ image_path }}" alt="Uploaded Image">
+        <h3>Image(s) Uploaded</h3>
+        {% for path in image_paths %}
+            <img src="/{{ path }}">
+        {% endfor %}
     </div>
 
     <div class="notes-box">
@@ -47,6 +136,64 @@
         <pre>{{ notes }}</pre>
     </div>
 </div>
+
+<button class="toggle-dark" id="dark-toggle">Light Mode</button>
+
+<script>
+    const container = document.getElementById("view-container");
+    const toggleBtn = document.getElementById("toggle-view-btn");
+    const darkToggle = document.getElementById("dark-toggle");
+
+    let showUploads = true;
+
+    function updateLayout() {
+        if (showUploads) {
+            container.classList.remove("notes-only");
+            toggleBtn.classList.add("active");
+            toggleBtn.textContent = "Show Uploads: ON";
+        } else {
+            container.classList.add("notes-only");
+            toggleBtn.classList.remove("active");
+            toggleBtn.textContent = "Show Uploads: OFF";
+        }
+    }
+
+    toggleBtn.addEventListener("click", () => {
+        showUploads = !showUploads;
+        updateLayout();
+    });
+
+    document.addEventListener("keydown", (event) => {
+        if (event.shiftKey && event.key.toLowerCase() === "s") {
+            event.preventDefault();
+            showUploads = !showUploads;
+            updateLayout();
+        }
+    });
+
+    if (!localStorage.getItem("darkMode")) {
+        localStorage.setItem("darkMode", "true");
+    }
+    if (localStorage.getItem("darkMode") === "false") {
+        document.body.classList.add("light");
+        darkToggle.textContent = "Dark Mode";
+    }
+
+    darkToggle.addEventListener("click", () => {
+        const isLight = document.body.classList.contains("light");
+        if (isLight) {
+            document.body.classList.remove("light");
+            localStorage.setItem("darkMode", "true");
+            darkToggle.textContent = "Light Mode";
+        } else {
+            document.body.classList.add("light");
+            localStorage.setItem("darkMode", "false");
+            darkToggle.textContent = "Dark Mode";
+        }
+    });
+
+    updateLayout();
+</script>
 
 </body>
 </html>
