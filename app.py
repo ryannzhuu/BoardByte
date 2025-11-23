@@ -8,12 +8,16 @@ import markdown
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
+import time
 
 client = OpenAI()
 UPLOAD_FOLDER = "uploads"
 SAVED_FOLDER = "saved"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SAVED_FOLDER, exist_ok=True)
+MAX_IMAGES = 10
+MIN_SECONDS_BETWEEN_GENERATIONS = 1.0
+PASSWORD_MAX_LENGTH = 72
 
 DB_PATH = "boardbyte.db"
 
@@ -109,6 +113,25 @@ def signup():
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
+        pw = password
+        errors = []
+        if len(pw) < 6:
+            errors.append("Password must be at least 6 characters.")
+        if len(pw) > PASSWORD_MAX_LENGTH:
+            errors.append("Password is too long.")
+        if not re.search(r"[a-z]", pw):
+            errors.append("Password must contain a lowercase letter.")
+        if not re.search(r"[A-Z]", pw):
+            errors.append("Password must contain an uppercase letter.")
+        if not re.search(r"\d", pw):
+            errors.append("Password must contain a number.")
+        if not re.search(r"[!@#$%^&*()_\-+=\[\]{};:'\",.<>/?\\|]", pw):
+            errors.append("Password must contain a special character.")
+
+        if errors:
+            error_text = " ".join(errors)
+            return render_template("signup.html", user=user, error=error_text)
+
         if not email or not password:
             error = "Email and password are required."
             return render_template("signup.html", user=user, error=error)
@@ -161,12 +184,24 @@ def logout():
 
 @app.route("/results", methods=["POST"])
 def results():
+    user = get_current_user()
+
+    last_ts = session.get("last_generation_ts")
+    now_ts = time.time()
+    if last_ts is not None and now_ts - last_ts < MIN_SECONDS_BETWEEN_GENERATIONS:
+        return "Please wait a moment and try again."
+    
+    session["last_generation_ts"] = now_ts
+
     mode = request.form.get("mode", "bullet")
     images = request.files.getlist("images")
     images = [i for i in images if i.filename]
 
     if not images:
         return "No images uploaded."
+    
+    if len(images) > MAX_IMAGES:
+        return f"Please upload at most {MAX_IMAGES} images per generation."
 
     image_bytes = []
     image_exts = []
@@ -194,9 +229,12 @@ def results():
         )
     content.append({"type": "text", "text": prompt})
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini", messages=[{"role": "user", "content": content}]
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini", messages=[{"role": "user", "content": content}]
+        )
+    except Exception:
+        return "There was an error generating notes (possibly a rate limit)."
 
     raw = response.choices[0].message.content
     cleaned = clean_markdown(raw)
@@ -211,7 +249,7 @@ def results():
     note_title = f"{mode.capitalize()} notes"
 
     if user:
-        now_iso = datetime.utcnow().isoformat()
+        now_iso = datetime.utcnow().isoformat() + "Z"
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
@@ -303,7 +341,7 @@ def note_detail(note_id):
         conn.close()
         return redirect(url_for("notes"))
 
-    now_iso = datetime.utcnow().isoformat()
+    now_iso = datetime.utcnow().isoformat() + "Z"
     cur.execute("UPDATE notes SET last_visited = ? WHERE id = ?", (now_iso, note_id))
     conn.commit()
     conn.close()

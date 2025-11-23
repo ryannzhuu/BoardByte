@@ -43,7 +43,7 @@
         }
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
         }
         .note-card {
@@ -103,6 +103,10 @@
             border: 1px solid #444;
             background: #111;
             color: white;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         body.light .rename-form input {
             background: white;
@@ -157,8 +161,12 @@
 {% if notes %}
 <div class="grid">
     {% for note in notes %}
-    <div class="note-card">
-        <div class="note-title">{{ note["title"] }}</div>
+        <div class="note-card">
+        <form class="rename-form" method="POST" action="{{ url_for('rename_note', note_id=note['id']) }}">
+            <input type="text" name="title" value="{{ note['title'] }}" maxlength="80">
+            <input type="hidden" name="source" value="dashboard">
+            <button type="submit">Save Title</button>
+        </form>
         <div class="note-meta">
             Note Method: {{ note["category"] }}<br>
             Created: <span class="time" data-iso="{{ note['created_at'] }}"></span><br>
@@ -170,11 +178,6 @@
                 <button class="btn-delete" type="submit">Delete</button>
             </form>
         </div>
-        <form class="rename-form" method="POST" action="{{ url_for('rename_note', note_id=note['id']) }}">
-            <input type="text" name="title" value="{{ note['title'] }}">
-            <input type="hidden" name="source" value="dashboard">
-            <button type="submit">Save Title</button>
-        </form>
     </div>
     {% endfor %}
 </div>
