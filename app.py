@@ -1,7 +1,9 @@
 from flask import Flask, render_template, request, send_from_directory
 from openai import OpenAI
 import base64
+import re
 import os
+import markdown
 
 client = OpenAI()
 UPLOAD_FOLDER = "uploads"
@@ -25,6 +27,13 @@ def build_prompt(mode):
         return base + "Convert the board into a clear STEP-BY-STEP explanation."
     else:
         return base + "Convert the board content into clean, structured notes."
+
+def clean_markdown(text):
+    text = re.sub(r'(?m)^(#+)([^#\s])', r'\1 \2', text)
+    text = re.sub(r"^(here'?s.*?:)", "", text, flags=re.IGNORECASE).strip()
+    text = re.sub(r'(?m)^\s*[-–—]{3,}\s*$', '', text)
+    text = text.encode("utf-8", "replace").decode("utf-8")
+    return text.strip()
 
 @app.route('/')
 def index():
@@ -70,9 +79,13 @@ def results():
         messages=[{"role": "user", "content": content}]
     )
 
+    raw = response.choices[0].message.content
+    cleaned = clean_markdown(raw)
+    notes_html = markdown.markdown(cleaned)
+
     return render_template(
         "results.html",
-        notes=response.choices[0].message.content,
+        notes_html=notes_html,
         image_paths=image_paths
     )
 

@@ -108,6 +108,20 @@
             color: black;
             border-color: #aaa;
         }
+
+        .markdown h1 { font-size: 28px; margin-top: 20px; }
+        .markdown h2 { font-size: 24px; margin-top: 18px; }
+        .markdown h3 { font-size: 20px; margin-top: 16px; }
+        .markdown h4 { font-size: 18px; margin-top: 14px; }
+
+        .markdown p, .markdown li {
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .markdown ul {
+            padding-left: 20px;
+        }
     </style>
 </head>
 <body>
@@ -132,8 +146,7 @@
     </div>
 
     <div class="notes-box">
-        <h3>Generated Notes</h3>
-        <pre>{{ notes }}</pre>
+        <div class="markdown">{{ notes_html|safe }}</div>
     </div>
 </div>
 
@@ -194,6 +207,9 @@
 
     updateLayout();
 </script>
-
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+</script>
 </body>
 </html>
