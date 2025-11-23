@@ -64,7 +64,7 @@
 <body>
 
 <div class="top-bar">
-    <div class="logo">BoardByte</div>
+    <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
     <div class="top-right">
         {% if user %}
             <span style="font-size: 14px; opacity: 0.85;">{{ user["email"] }}</span>

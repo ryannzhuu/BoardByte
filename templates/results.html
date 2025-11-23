@@ -168,7 +168,7 @@
 
 <div class="header">
     <div class="header-left">
-        <div class="logo">BoardByte</div>
+        <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
         <button onclick="window.location.href='{{ url_for('index') }}'">Back</button>
         <button id="toggle-view-btn" class="active">Show Uploads: ON</button>
     </div>

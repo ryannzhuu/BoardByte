@@ -316,13 +316,12 @@ def notes():
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, title, category, created_at, last_visited FROM notes WHERE user_id = ? ORDER BY datetime(created_at) DESC",
+        "SELECT id, title, category, created_at, last_visited FROM notes WHERE user_id = ? ORDER BY datetime(last_visited) DESC, datetime(created_at) DESC",
         (user["id"],),
     )
     rows = cur.fetchall()
     conn.close()
     return render_template("notes.html", user=user, notes=rows)
-
 
 @app.route("/notes/<int:note_id>")
 def note_detail(note_id):

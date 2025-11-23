@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ note["title"] }} - BoardByte</title>
+    <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
     <style>
         body {
             font-family: Arial, sans-serif;

@@ -28,6 +28,8 @@
         .logo {
             font-size: 28px;
             font-weight: bold;
+            text-decoration: none;
+            color: inherit;
         }
         .header-right a {
             color: inherit;
@@ -57,13 +59,10 @@
             background: #fafafa;
             border-color: #ccc;
         }
-        .note-title {
-            font-size: 18px;
-            margin-bottom: 6px;
-        }
         .note-meta {
             font-size: 13px;
             opacity: 0.85;
+            margin-top: 8px;
             margin-bottom: 10px;
         }
         .note-actions {
@@ -94,7 +93,6 @@
         .rename-form {
             display: flex;
             gap: 6px;
-            margin-top: 8px;
         }
         .rename-form input {
             flex: 1;
@@ -107,6 +105,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            font-size: 14px;
         }
         body.light .rename-form input {
             background: white;
@@ -149,7 +148,7 @@
 
 <div class="header">
     <div class="header-left">
-        <div class="logo">BoardByte</div>
+        <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
         <button onclick="window.location.href='{{ url_for('index') }}'" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; cursor: pointer; font-size: 13px;">Back to Upload</button>
     </div>
     <div class="header-right">
@@ -161,7 +160,7 @@
 {% if notes %}
 <div class="grid">
     {% for note in notes %}
-        <div class="note-card">
+    <div class="note-card">
         <form class="rename-form" method="POST" action="{{ url_for('rename_note', note_id=note['id']) }}">
             <input type="text" name="title" value="{{ note['title'] }}" maxlength="80">
             <input type="hidden" name="source" value="dashboard">
@@ -169,8 +168,8 @@
         </form>
         <div class="note-meta">
             Note Method: {{ note["category"] }}<br>
-            Created: <span class="time" data-iso="{{ note['created_at'] }}"></span><br>
-            Last visited: <span class="time" data-iso="{{ note['last_visited'] }}"></span>
+            Created: <span class="time-created" data-iso="{{ note['created_at'] }}"></span><br>
+            Last visited: <span class="time-last" data-iso="{{ note['last_visited'] }}"></span>
         </div>
         <div class="note-actions">
             <a class="btn-link" href="{{ url_for('note_detail', note_id=note['id']) }}">Open</a>
@@ -211,12 +210,53 @@
         }
     });
 
-    document.querySelectorAll(".time").forEach(el => {
+    function formatDateTime(d, includeDay) {
+        const dateOpts = includeDay
+            ? { weekday: "long", month: "long", day: "numeric", year: "numeric" }
+            : { month: "long", day: "numeric", year: "numeric" };
+        const datePart = d.toLocaleDateString(undefined, dateOpts);
+        const timePart = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+        return datePart + " @ " + timePart;
+    }
+
+    document.querySelectorAll(".time-created").forEach(el => {
         const iso = el.dataset.iso;
         if (!iso) return;
         const d = new Date(iso);
         if (isNaN(d)) return;
-        el.textContent = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+        el.textContent = formatDateTime(d, true);
+    });
+
+    document.querySelectorAll(".time-last").forEach(el => {
+        const iso = el.dataset.iso;
+        if (!iso) return;
+        const d = new Date(iso);
+        if (isNaN(d)) return;
+        const now = new Date();
+        const diffMs = now - d;
+        const minutes = Math.floor(diffMs / 60000);
+        const hours = Math.floor(diffMs / 3600000);
+        const days = Math.floor(diffMs / 86400000);
+        const weeks = Math.floor(days / 7);
+
+        let text;
+        if (minutes < 60) {
+            const m = Math.max(minutes, 1);
+            text = m + " minute" + (m === 1 ? "" : "s") + " ago";
+        } else if (hours < 24) {
+            const h = hours;
+            text = h + " hour" + (h === 1 ? "" : "s") + " ago";
+        } else if (days <= 6) {
+            const dCount = days;
+            text = dCount + " day" + (dCount === 1 ? "" : "s") + " ago";
+        } else if (weeks <= 3) {
+            const w = Math.max(1, weeks);
+            text = w + " week" + (w === 1 ? "" : "s") + " ago";
+        } else {
+            text = formatDateTime(d, false);
+        }
+
+        el.textContent = text;
     });
 </script>
 

@@ -23,6 +23,8 @@
         .logo {
             font-size: 28px;
             font-weight: bold;
+            text-decoration: none;
+            color: inherit;
         }
         .top-right a {
             margin-left: 10px;
@@ -56,12 +58,13 @@
         }
         .card h2 {
             margin-top: 0;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
             text-align: center;
+            font-size: 20px;
         }
         .error {
             color: #ff6b6b;
-            font-size: 14px;
+            font-size: 13px;
             margin-bottom: 10px;
             text-align: center;
         }
@@ -74,6 +77,7 @@
             background: #111;
             color: white;
             box-sizing: border-box;
+            font-size: 14px;
         }
         body.light input {
             background: white;
@@ -120,7 +124,7 @@
 <body>
 
 <div class="top-bar">
-    <div class="logo">BoardByte</div>
+    <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
     <div class="top-right">
         <a href="{{ url_for('index') }}">Home</a>
         <a href="{{ url_for('signup') }}">Sign Up</a>
