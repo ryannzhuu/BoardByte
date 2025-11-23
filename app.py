@@ -266,7 +266,7 @@ def results():
             full_path = os.path.join(saved_dir, filename)
             with open(full_path, "wb") as f:
                 f.write(data)
-            rel_path = f"{SAVED_FOLDER}/{user['id']}/{note_id}/{filename}"
+            rel_path = f"saved/{user['id']}/{note_id}/{filename}"
             saved_rel_paths.append(rel_path)
 
         image_paths_json = json.dumps(saved_rel_paths)
@@ -289,7 +289,7 @@ def results():
             full_path = os.path.join(UPLOAD_FOLDER, filename)
             with open(full_path, "wb") as f:
                 f.write(data)
-            temp_paths.append(f"{UPLOAD_FOLDER}/{filename}")
+            temp_paths.append(f"uploads/{filename}")
         image_paths = temp_paths
 
     return render_template(
