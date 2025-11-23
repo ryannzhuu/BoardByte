@@ -24,7 +24,8 @@ app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 app.config["SESSION_COOKIE_NAME"] = "boardbyte_session"
-
+with app.app_context():
+    init_db()
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -62,7 +63,6 @@ def init_db():
     )
     conn.commit()
     conn.close()
-
 
 def build_prompt(mode):
     base = "Rules: Do NOT make up content. Do NOT add introductions. ONLY provide the notes in the requested format.\n\n"
