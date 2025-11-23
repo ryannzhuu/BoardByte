@@ -24,8 +24,6 @@ app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 app.config["SESSION_COOKIE_NAME"] = "boardbyte_session"
-with app.app_context():
-    init_db()
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -409,6 +407,8 @@ def uploaded_file(filename):
 def saved_file(filename):
     return send_from_directory(SAVED_FOLDER, filename)
 
+with app.app_context():
+    init_db()
 
 if __name__ == "__main__":
     init_db()
