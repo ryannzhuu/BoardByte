@@ -1,6 +1,5 @@
 from flask import Flask, render_template, request, send_from_directory, redirect, url_for, session
 from openai import OpenAI
-import json
 import base64
 import re
 import os
@@ -8,22 +7,27 @@ import sqlite3
 import markdown
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+import json
 
 client = OpenAI()
 UPLOAD_FOLDER = "uploads"
+SAVED_FOLDER = "saved"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(SAVED_FOLDER, exist_ok=True)
 
 DB_PATH = "boardbyte.db"
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.secret_key = os.environ.get("SECRET_KEY", "dev_secret")
 app.config["SESSION_COOKIE_NAME"] = "boardbyte_session"
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     conn = get_db()
@@ -48,12 +52,14 @@ def init_db():
             content_html TEXT,
             image_paths TEXT,
             created_at TEXT,
+            last_visited TEXT,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
         """
     )
     conn.commit()
     conn.close()
+
 
 def build_prompt(mode):
     base = "Rules: Do NOT make up content. Do NOT add introductions. ONLY provide the notes in the requested format.\n\n"
@@ -70,12 +76,14 @@ def build_prompt(mode):
     else:
         return base + "Convert the board content into clean, structured notes."
 
+
 def clean_markdown(text):
-    text = re.sub(r'(?m)^(#+)([^#\s])', r'\1 \2', text)
+    text = re.sub(r"(?m)^(#+)([^#\s])", r"\1 \2", text)
     text = re.sub(r"^(here'?s.*?:)", "", text, flags=re.IGNORECASE).strip()
-    text = re.sub(r'(?m)^\s*[-–—]{3,}\s*$', '', text)
+    text = re.sub(r"(?m)^\s*[-–—]{3,}\s*$", "", text)
     text = text.encode("utf-8", "replace").decode("utf-8")
     return text.strip()
+
 
 def get_current_user():
     user_id = session.get("user_id")
@@ -88,85 +96,68 @@ def get_current_user():
     conn.close()
     return row
 
-def save_note(user_id, title, category, content_html):
-    if not user_id:
-        return
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO notes (user_id, title, category, content_html, created_at) VALUES (?, ?, ?, ?, ?)",
-        (user_id, title, category, content_html, datetime.utcnow().isoformat())
-    )
-    conn.commit()
-    conn.close()
 
 @app.route("/")
 def index():
     user = get_current_user()
     return render_template("index.html", user=user)
 
+
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
+    user = get_current_user()
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         if not email or not password:
-            return "Email and password required."
+            error = "Email and password are required."
+            return render_template("signup.html", user=user, error=error)
         conn = get_db()
         cur = conn.cursor()
         cur.execute("SELECT id FROM users WHERE email = ?", (email,))
         existing = cur.fetchone()
         if existing:
             conn.close()
-            return "Email already registered."
+            error = "Email already registered."
+            return render_template("signup.html", user=user, error=error)
         password_hash = generate_password_hash(password)
+        created_at = datetime.utcnow().isoformat()
         cur.execute(
             "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
-            (email, password_hash, datetime.utcnow().isoformat())
+            (email, password_hash, created_at),
         )
         conn.commit()
         user_id = cur.lastrowid
         conn.close()
         session["user_id"] = user_id
         return redirect(url_for("index"))
-    return """
-    <h2>Sign Up</h2>
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" required><br><br>
-        <input type="password" name="password" placeholder="Password" required><br><br>
-        <button type="submit">Create Account</button>
-    </form>
-    <p><a href="/login">Already have an account? Log in</a></p>
-    """
+    return render_template("signup.html", user=user, error=None)
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    user = get_current_user()
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "")
         conn = get_db()
         cur = conn.cursor()
         cur.execute("SELECT * FROM users WHERE email = ?", (email,))
-        user = cur.fetchone()
+        found = cur.fetchone()
         conn.close()
-        if not user or not check_password_hash(user["password_hash"], password):
-            return "Invalid email or password."
-        session["user_id"] = user["id"]
+        if not found or not check_password_hash(found["password_hash"], password):
+            error = "Invalid email or password."
+            return render_template("login.html", user=user, error=error)
+        session["user_id"] = found["id"]
         return redirect(url_for("index"))
-    return """
-    <h2>Log In</h2>
-    <form method="POST">
-        <input type="email" name="email" placeholder="Email" required><br><br>
-        <input type="password" name="password" placeholder="Password" required><br><br>
-        <button type="submit">Log In</button>
-    </form>
-    <p><a href="/signup">Need an account? Sign up</a></p>
-    """
+    return render_template("login.html", user=user, error=None)
+
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect(url_for("index"))
+
 
 @app.route("/results", methods=["POST"])
 def results():
@@ -195,15 +186,16 @@ def results():
 
     content = []
     for b64 in encoded_images:
-        content.append({
-            "type": "image_url",
-            "image_url": {"url": f"data:image/png;base64,{b64}"}
-        })
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/png;base64,{b64}"},
+            }
+        )
     content.append({"type": "text", "text": prompt})
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": content}]
+        model="gpt-4o-mini", messages=[{"role": "user", "content": content}]
     )
 
     raw = response.choices[0].message.content
@@ -212,19 +204,25 @@ def results():
 
     user = get_current_user()
     image_paths = []
+    note_id = None
+    created_at = None
+    last_visited = None
+    note_method = mode.capitalize()
+    note_title = f"{mode.capitalize()} notes"
 
     if user:
+        now_iso = datetime.utcnow().isoformat()
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
-            "INSERT INTO notes (user_id, title, category, content_html, image_paths, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (user["id"], f"{mode.capitalize()} notes", mode, notes_html, "[]", datetime.utcnow().isoformat())
+            "INSERT INTO notes (user_id, title, category, content_html, image_paths, created_at, last_visited) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (user["id"], note_title, mode, notes_html, "[]", now_iso, now_iso),
         )
         conn.commit()
         note_id = cur.lastrowid
         conn.close()
 
-        saved_dir = os.path.join("saved", str(user["id"]), str(note_id))
+        saved_dir = os.path.join(SAVED_FOLDER, str(user["id"]), str(note_id))
         os.makedirs(saved_dir, exist_ok=True)
 
         saved_rel_paths = []
@@ -233,7 +231,7 @@ def results():
             full_path = os.path.join(saved_dir, filename)
             with open(full_path, "wb") as f:
                 f.write(data)
-            rel_path = f"saved/{user['id']}/{note_id}/{filename}"
+            rel_path = f"{SAVED_FOLDER}/{user['id']}/{note_id}/{filename}"
             saved_rel_paths.append(rel_path)
 
         image_paths_json = json.dumps(saved_rel_paths)
@@ -241,29 +239,36 @@ def results():
         cur = conn.cursor()
         cur.execute(
             "UPDATE notes SET image_paths = ? WHERE id = ?",
-            (image_paths_json, note_id)
+            (image_paths_json, note_id),
         )
         conn.commit()
         conn.close()
 
         image_paths = saved_rel_paths
+        created_at = now_iso
+        last_visited = now_iso
     else:
         temp_paths = []
-        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
         for idx, data in enumerate(image_bytes):
             filename = f"temp_{idx}{image_exts[idx]}"
             full_path = os.path.join(UPLOAD_FOLDER, filename)
             with open(full_path, "wb") as f:
                 f.write(data)
-            temp_paths.append(f"uploads/{filename}")
+            temp_paths.append(f"{UPLOAD_FOLDER}/{filename}")
         image_paths = temp_paths
 
     return render_template(
         "results.html",
         notes_html=notes_html,
         image_paths=image_paths,
-        user=user
+        user=user,
+        note_id=note_id,
+        note_title=note_title,
+        note_method=note_method,
+        created_at=created_at,
+        last_visited=last_visited,
     )
+
 
 @app.route("/notes")
 def notes():
@@ -273,12 +278,13 @@ def notes():
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
-        "SELECT id, title, category, created_at FROM notes WHERE user_id = ? ORDER BY datetime(created_at) DESC",
-        (user["id"],)
+        "SELECT id, title, category, created_at, last_visited FROM notes WHERE user_id = ? ORDER BY datetime(created_at) DESC",
+        (user["id"],),
     )
     rows = cur.fetchall()
     conn.close()
     return render_template("notes.html", user=user, notes=rows)
+
 
 @app.route("/notes/<int:note_id>")
 def note_detail(note_id):
@@ -290,24 +296,38 @@ def note_detail(note_id):
     cur = conn.cursor()
     cur.execute(
         "SELECT * FROM notes WHERE id = ? AND user_id = ?",
-        (note_id, user["id"])
+        (note_id, user["id"]),
     )
     note = cur.fetchone()
-    conn.close()
-
     if not note:
+        conn.close()
         return redirect(url_for("notes"))
+
+    now_iso = datetime.utcnow().isoformat()
+    cur.execute("UPDATE notes SET last_visited = ? WHERE id = ?", (now_iso, note_id))
+    conn.commit()
+    conn.close()
 
     notes_html = note["content_html"]
     image_paths_json = note["image_paths"] or "[]"
     image_paths = json.loads(image_paths_json)
+    created_at = note["created_at"]
+    last_visited = now_iso
+    note_method = (note["category"] or "").capitalize()
+    note_title = note["title"]
 
     return render_template(
         "results.html",
         notes_html=notes_html,
         image_paths=image_paths,
-        user=user
+        user=user,
+        note_id=note_id,
+        note_title=note_title,
+        note_method=note_method,
+        created_at=created_at,
+        last_visited=last_visited,
     )
+
 
 @app.route("/notes/<int:note_id>/delete", methods=["POST"])
 def delete_note(note_id):
@@ -321,14 +341,38 @@ def delete_note(note_id):
     conn.close()
     return redirect(url_for("notes"))
 
+
+@app.route("/notes/<int:note_id>/rename", methods=["POST"])
+def rename_note(note_id):
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))
+    new_title = request.form.get("title", "").strip()
+    source = request.form.get("source", "note")
+    if not new_title:
+        new_title = "Untitled notes"
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE notes SET title = ? WHERE id = ? AND user_id = ?",
+        (new_title, note_id, user["id"]),
+    )
+    conn.commit()
+    conn.close()
+    if source == "dashboard":
+        return redirect(url_for("notes"))
+    return redirect(url_for("note_detail", note_id=note_id))
+
+
+@app.route("/uploads/<path:filename>")
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+
 @app.route("/saved/<path:filename>")
 def saved_file(filename):
-    base_dir = os.path.join("saved")
-    return send_from_directory(base_dir, filename)
+    return send_from_directory(SAVED_FOLDER, filename)
 
-@app.route("/uploads/<filename>")
-def uploaded_file(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
 if __name__ == "__main__":
     init_db()

@@ -14,7 +14,6 @@
             background: white;
             color: black;
         }
-
         .header {
             display: flex;
             align-items: center;
@@ -25,6 +24,10 @@
             display: flex;
             align-items: center;
             gap: 12px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
         }
         .header button {
             padding: 8px 14px;
@@ -43,7 +46,6 @@
             color: black;
             border-color: #aaa;
         }
-
         .header-right {
             display: flex;
             align-items: center;
@@ -60,13 +62,11 @@
         body.light .header-right a {
             border-color: #aaa;
         }
-
         .container {
             display: flex;
             gap: 20px;
             width: 100%;
         }
-
         .image-box, .notes-box {
             width: 50%;
             border: 1px solid #444;
@@ -82,7 +82,6 @@
             background: #fafafa;
             border-color: #ccc;
         }
-
         .notes-only {
             flex-direction: column;
             align-items: center;
@@ -96,13 +95,11 @@
             max-height: none;
             margin: 0;
         }
-
         img {
             width: 100%;
             border-radius: 10px;
             margin-bottom: 20px;
         }
-
         .toggle-dark {
             position: fixed;
             bottom: 20px;
@@ -120,19 +117,50 @@
             color: black;
             border-color: #aaa;
         }
-
         .markdown h1 { font-size: 28px; margin-top: 20px; }
         .markdown h2 { font-size: 24px; margin-top: 18px; }
         .markdown h3 { font-size: 20px; margin-top: 16px; }
         .markdown h4 { font-size: 18px; margin-top: 14px; }
-
         .markdown p, .markdown li {
             line-height: 1.6;
             margin-bottom: 8px;
         }
-
         .markdown ul {
             padding-left: 20px;
+        }
+        .title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .title-row input {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #111;
+            color: white;
+        }
+        body.light .title-row input {
+            background: white;
+            color: black;
+            border-color: #aaa;
+        }
+        .title-row button {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .meta-line {
+            font-size: 13px;
+            opacity: 0.85;
+            margin-bottom: 12px;
         }
     </style>
 </head>
@@ -140,11 +168,9 @@
 
 <div class="header">
     <div class="header-left">
-        <h1 style="margin: 0;">BoardByte Notes</h1>
-        <button onclick="window.location.href='/'">Back</button>
-        <button id="toggle-view-btn" class="active">
-            Show Uploads: ON
-        </button>
+        <div class="logo">BoardByte</div>
+        <button onclick="window.location.href='{{ url_for('index') }}'">Back</button>
+        <button id="toggle-view-btn" class="active">Show Uploads: ON</button>
     </div>
     <div class="header-right">
         {% if user %}
@@ -167,7 +193,30 @@
     </div>
 
     <div class="notes-box">
-        <h3>Generated Notes</h3>
+        {% if user and note_id %}
+            <div class="title-row">
+                <form method="POST" action="{{ url_for('rename_note', note_id=note_id) }}" style="display:flex; gap:8px; width:100%;">
+                    <input type="text" name="title" value="{{ note_title }}">
+                    <input type="hidden" name="source" value="note">
+                    <button type="submit">Save Title</button>
+                </form>
+            </div>
+        {% else %}
+            <h3>Generated Notes</h3>
+        {% endif %}
+
+        {% if note_method or created_at or last_visited %}
+            <div class="meta-line">
+                {% if note_method %}Note Method: {{ note_method }}{% endif %}
+                {% if created_at %}
+                    &nbsp;•&nbsp; Created: <span class="time" data-iso="{{ created_at }}"></span>
+                {% endif %}
+                {% if last_visited %}
+                    &nbsp;•&nbsp; Last visited: <span class="time" data-iso="{{ last_visited }}"></span>
+                {% endif %}
+            </div>
+        {% endif %}
+
         <div class="markdown">{{ notes_html|safe }}</div>
     </div>
 </div>
@@ -228,6 +277,14 @@
     });
 
     updateLayout();
+
+    document.querySelectorAll(".time").forEach(el => {
+        const iso = el.dataset.iso;
+        if (!iso) return;
+        const d = new Date(iso);
+        if (isNaN(d)) return;
+        el.textContent = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+    });
 </script>
 
 </body>
