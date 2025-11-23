@@ -11,15 +11,14 @@ import json
 import time
 
 client = OpenAI()
-UPLOAD_FOLDER = "uploads"
-SAVED_FOLDER = "saved"
+UPLOAD_FOLDER = "/tmp/uploads"
+SAVED_FOLDER = "/tmp/saved"
+DB_PATH = "/tmp/boardbyte.db"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(SAVED_FOLDER, exist_ok=True)
 MAX_IMAGES = 10
 MIN_SECONDS_BETWEEN_GENERATIONS = 1.0
 PASSWORD_MAX_LENGTH = 72
-
-DB_PATH = "boardbyte.db"
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
