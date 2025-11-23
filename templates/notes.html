@@ -43,6 +43,17 @@
         body.light .header-right a {
             border-color: #aaa;
         }
+
+        .btn-blue {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid #1d4ed8;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -77,7 +88,7 @@
             border-radius: 4px;
             border: 1px solid #444;
             background: #222;
-            color: white;
+            color: inherit;
             text-decoration: none;
             cursor: pointer;
         }
@@ -90,6 +101,7 @@
             color: black;
             border-color: #aaa;
         }
+
         .rename-form {
             display: flex;
             gap: 6px;
@@ -100,9 +112,8 @@
             border-radius: 6px;
             border: 1px solid #444;
             background: #111;
-            color: white;
+            color: inherit;
             max-width: 100%;
-            white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
             font-size: 14px;
@@ -121,14 +132,18 @@
             cursor: pointer;
             font-size: 13px;
         }
+
         .empty-state {
             opacity: 0.8;
             font-size: 15px;
         }
+
         .toggle-dark {
             position: fixed;
             bottom: 20px;
             right: 20px;
+            width: auto;
+            display: inline-block;
             padding: 10px 16px;
             border-radius: 6px;
             border: 1px solid #444;
@@ -149,8 +164,12 @@
 <div class="header">
     <div class="header-left">
         <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
-        <button onclick="window.location.href='{{ url_for('index') }}'" style="padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: white; cursor: pointer; font-size: 13px;">Back to Upload</button>
+
+        <button onclick="window.location.href='{{ url_for('index') }}'" class="btn-blue">
+            Back to Upload
+        </button>
     </div>
+
     <div class="header-right">
         <span style="font-size: 14px; opacity: 0.85;">{{ user["email"] }}</span>
         <a href="{{ url_for('logout') }}">Logout</a>
@@ -166,11 +185,13 @@
             <input type="hidden" name="source" value="dashboard">
             <button type="submit">Save Title</button>
         </form>
+
         <div class="note-meta">
             Note Method: {{ note["category"] }}<br>
             Created: <span class="time-created" data-iso="{{ note['created_at'] }}"></span><br>
             Last visited: <span class="time-last" data-iso="{{ note['last_visited'] }}"></span>
         </div>
+
         <div class="note-actions">
             <a class="btn-link" href="{{ url_for('note_detail', note_id=note['id']) }}">Open</a>
             <form method="POST" action="{{ url_for('delete_note', note_id=note['id']) }}" style="margin: 0;">
@@ -189,9 +210,7 @@
 <script>
     const darkToggle = document.getElementById("dark-toggle");
 
-    if (!localStorage.getItem("darkMode")) {
-        localStorage.setItem("darkMode", "true");
-    }
+    if (!localStorage.getItem("darkMode")) localStorage.setItem("darkMode", "true");
     if (localStorage.getItem("darkMode") === "false") {
         document.body.classList.add("light");
         darkToggle.textContent = "Dark Mode";
@@ -232,26 +251,26 @@
         if (!iso) return;
         const d = new Date(iso);
         if (isNaN(d)) return;
+
         const now = new Date();
         const diffMs = now - d;
+
         const minutes = Math.floor(diffMs / 60000);
         const hours = Math.floor(diffMs / 3600000);
         const days = Math.floor(diffMs / 86400000);
         const weeks = Math.floor(days / 7);
 
         let text;
+
         if (minutes < 60) {
             const m = Math.max(minutes, 1);
             text = m + " minute" + (m === 1 ? "" : "s") + " ago";
         } else if (hours < 24) {
-            const h = hours;
-            text = h + " hour" + (h === 1 ? "" : "s") + " ago";
+            text = hours + " hour" + (hours === 1 ? "" : "s") + " ago";
         } else if (days <= 6) {
-            const dCount = days;
-            text = dCount + " day" + (dCount === 1 ? "" : "s") + " ago";
+            text = days + " day" + (days === 1 ? "" : "s") + " ago";
         } else if (weeks <= 3) {
-            const w = Math.max(1, weeks);
-            text = w + " week" + (w === 1 ? "" : "s") + " ago";
+            text = weeks + " week" + (weeks === 1 ? "" : "s") + " ago";
         } else {
             text = formatDateTime(d, false);
         }

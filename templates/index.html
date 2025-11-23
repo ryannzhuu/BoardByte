@@ -20,8 +20,10 @@
             margin-bottom: 20px;
         }
         .logo {
-            font-size: 22px;
+            font-size: 28px;
             font-weight: bold;
+            text-decoration: none;
+            color: inherit;
         }
         .top-right a {
             margin-left: 10px;
@@ -42,10 +44,13 @@
         input, button {
             font-size: 16px;
         }
+
+        /* REAL FIX — bottom-right toggle, not full width */
         .toggle-dark {
             position: fixed;
             bottom: 20px;
             right: 20px;
+            width: auto;
             padding: 10px 16px;
             border-radius: 6px;
             border: 1px solid #444;
@@ -58,6 +63,16 @@
             background: #ddd;
             color: black;
             border-color: #aaa;
+        }
+
+        /* Blue action buttons */
+        button[type="submit"] {
+            background: #2563eb !important;
+            color: white !important;
+            border: none !important;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
         }
     </style>
 </head>

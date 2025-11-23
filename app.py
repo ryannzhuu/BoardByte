@@ -5,7 +5,7 @@ import re
 import os
 import sqlite3
 import markdown
-from datetime import datetime
+import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import time
@@ -144,7 +144,7 @@ def signup():
             error = "Email already registered."
             return render_template("signup.html", user=user, error=error)
         password_hash = generate_password_hash(password)
-        created_at = datetime.utcnow().isoformat()
+        created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
         cur.execute(
             "INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)",
             (email, password_hash, created_at),
@@ -249,7 +249,7 @@ def results():
     note_title = f"{mode.capitalize()} notes"
 
     if user:
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
         conn = get_db()
         cur = conn.cursor()
         cur.execute(
@@ -340,7 +340,7 @@ def note_detail(note_id):
         conn.close()
         return redirect(url_for("notes"))
 
-    now_iso = datetime.utcnow().isoformat() + "Z"
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
     cur.execute("UPDATE notes SET last_visited = ? WHERE id = ?", (now_iso, note_id))
     conn.commit()
     conn.close()

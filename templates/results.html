@@ -14,22 +14,46 @@
             background: white;
             color: black;
         }
-        .header {
+        .top-bar {
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        .header-left {
-            display: flex;
             align-items: center;
-            gap: 12px;
+            margin-bottom: 20px;
         }
         .logo {
             font-size: 28px;
             font-weight: bold;
+            text-decoration: none;
+            color: inherit;
         }
-        .header button {
+        .top-right a {
+            margin-left: 10px;
+            color: inherit;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        body.light .top-right a {
+            border-color: #aaa;
+        }
+
+        .btn-blue {
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid #1d4ed8;
+            background: #2563eb;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .header-buttons button {
             padding: 8px 14px;
             border-radius: 6px;
             border: 1px solid #444;
@@ -38,30 +62,15 @@
             cursor: pointer;
             font-size: 14px;
         }
-        .header button.active {
+        .header-buttons button.active {
             background: #2563eb;
         }
-        body.light .header button {
+        body.light .header-buttons button {
             background: #ddd;
             color: black;
             border-color: #aaa;
         }
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .header-right a {
-            color: inherit;
-            text-decoration: none;
-            font-size: 14px;
-            padding: 6px 10px;
-            border-radius: 4px;
-            border: 1px solid #444;
-        }
-        body.light .header-right a {
-            border-color: #aaa;
-        }
+
         .container {
             display: flex;
             gap: 20px;
@@ -77,11 +86,11 @@
             max-height: 80vh;
             box-sizing: border-box;
         }
-        body.light .image-box,
-        body.light .notes-box {
+        body.light .image-box, body.light .notes-box {
             background: #fafafa;
             border-color: #ccc;
         }
+
         .notes-only {
             flex-direction: column;
             align-items: center;
@@ -95,43 +104,16 @@
             max-height: none;
             margin: 0;
         }
+
         img {
             width: 100%;
             border-radius: 10px;
             margin-bottom: 20px;
         }
-        .toggle-dark {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 16px;
-            border-radius: 6px;
-            border: 1px solid #444;
-            background: #222;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        body.light .toggle-dark {
-            background: #ddd;
-            color: black;
-            border-color: #aaa;
-        }
-        .markdown h1 { font-size: 28px; margin-top: 20px; }
-        .markdown h2 { font-size: 24px; margin-top: 18px; }
-        .markdown h3 { font-size: 20px; margin-top: 16px; }
-        .markdown h4 { font-size: 18px; margin-top: 14px; }
-        .markdown p, .markdown li {
-            line-height: 1.6;
-            margin-bottom: 8px;
-        }
-        .markdown ul {
-            padding-left: 20px;
-        }
+
         .title-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             gap: 10px;
             margin-bottom: 8px;
         }
@@ -151,30 +133,64 @@
         .title-row button {
             padding: 6px 10px;
             border-radius: 6px;
-            border: 1px solid #444;
+            border: 1px solid #1d4ed8;
             background: #2563eb;
             color: white;
             cursor: pointer;
             font-size: 13px;
         }
+
         .meta-line {
             font-size: 13px;
             opacity: 0.85;
             margin-bottom: 12px;
         }
+
+        .markdown h1 { font-size: 28px; margin-top: 20px; }
+        .markdown h2 { font-size: 24px; margin-top: 18px; }
+        .markdown h3 { font-size: 20px; margin-top: 16px; }
+        .markdown h4 { font-size: 18px; margin-top: 14px; }
+        .markdown p, .markdown li {
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        .markdown ul {
+            padding-left: 20px;
+        }
+
+        .toggle-dark {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: auto;
+            padding: 10px 16px;
+            border-radius: 6px;
+            border: 1px solid #444;
+            background: #222;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        body.light .toggle-dark {
+            background: #ddd;
+            color: black;
+            border-color: #aaa;
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="header-left">
-        <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
-        <button onclick="window.location.href='{{ url_for('index') }}'">Back</button>
+<div class="top-bar">
+    <a class="logo" href="{{ url_for('notes') if user else url_for('index') }}">BoardByte</a>
+
+    <div class="header-buttons">
+        <button class="btn-blue" onclick="window.location.href='{{ url_for('index') }}'">Back</button>
         <button id="toggle-view-btn" class="active">Show Uploads: ON</button>
     </div>
-    <div class="header-right">
+
+    <div class="top-right">
         {% if user %}
-            <span style="font-size: 14px; opacity: 0.85;">{{ user["email"] }}</span>
+            <span style="font-size: 14px; opacity: 0.85;">{{ user['email'] }}</span>
             <a href="{{ url_for('notes') }}">My Notes</a>
             <a href="{{ url_for('logout') }}">Logout</a>
         {% else %}
@@ -193,12 +209,13 @@
     </div>
 
     <div class="notes-box">
+
         {% if user and note_id %}
             <div class="title-row">
                 <form method="POST" action="{{ url_for('rename_note', note_id=note_id) }}" style="display:flex; gap:8px; width:100%;">
                     <input type="text" name="title" value="{{ note_title }}">
                     <input type="hidden" name="source" value="note">
-                    <button type="submit">Save Title</button>
+                    <button type="submit">Save</button>
                 </form>
             </div>
         {% else %}
@@ -208,12 +225,8 @@
         {% if note_method or created_at or last_visited %}
             <div class="meta-line">
                 {% if note_method %}Note Method: {{ note_method }}{% endif %}
-                {% if created_at %}
-                    &nbsp;•&nbsp; Created: <span class="time" data-iso="{{ created_at }}"></span>
-                {% endif %}
-                {% if last_visited %}
-                    &nbsp;•&nbsp; Last visited: <span class="time" data-iso="{{ last_visited }}"></span>
-                {% endif %}
+                {% if created_at %}&nbsp;•&nbsp; Created: <span class="time" data-iso="{{ created_at }}"></span>{% endif %}
+                {% if last_visited %}&nbsp;•&nbsp; Last visited: <span class="time" data-iso="{{ last_visited }}"></span>{% endif %}
             </div>
         {% endif %}
 
@@ -227,7 +240,6 @@
     const container = document.getElementById("view-container");
     const toggleBtn = document.getElementById("toggle-view-btn");
     const darkToggle = document.getElementById("dark-toggle");
-
     let showUploads = true;
 
     function updateLayout() {
@@ -247,17 +259,7 @@
         updateLayout();
     });
 
-    document.addEventListener("keydown", (event) => {
-        if (event.shiftKey && event.key.toLowerCase() === "s") {
-            event.preventDefault();
-            showUploads = !showUploads;
-            updateLayout();
-        }
-    });
-
-    if (!localStorage.getItem("darkMode")) {
-        localStorage.setItem("darkMode", "true");
-    }
+    if (!localStorage.getItem("darkMode")) localStorage.setItem("darkMode", "true");
     if (localStorage.getItem("darkMode") === "false") {
         document.body.classList.add("light");
         darkToggle.textContent = "Dark Mode";
